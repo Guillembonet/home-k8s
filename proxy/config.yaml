@@ -1,0 +1,25 @@
+tcp:
+  routers:
+    https:
+      rule: "HostSNI(`*`)"
+      entryPoints: [ "websecure" ]
+      service: backend-https
+      tls:
+        passthrough: true
+    http:
+      rule: "HostSNI(`*`)"
+      entryPoints: [ "web" ]
+      service: backend-http
+  services:
+    backend-http:
+      loadBalancer:
+        proxyProtocol:
+          version: 2
+        servers:
+        - address: "traefik2:80"
+    backend-https:
+      loadBalancer:
+        proxyProtocol:
+          version: 2
+        servers:
+        - address: "traefik2:443"

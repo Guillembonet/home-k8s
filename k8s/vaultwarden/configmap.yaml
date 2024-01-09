@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vaultwarden-config
+  namespace: vaultwarden
+data:
+  SIGNUPS_ALLOWED: "true"
+  DATABASE_URL: "postgres://admin:admin@postgres.postgres.svc:5432/vaultwarden"

@@ -1,0 +1,10 @@
+version: "3"
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik-proxy
+    restart: always
+    network_mode: "host"
+    volumes:
+      - ./traefik.yaml:/traefik.yaml
+      - ./config.yaml:/config.yaml
