@@ -10,6 +10,10 @@ tcp:
       rule: "HostSNI(`*`)"
       entryPoints: [ "web" ]
       service: backend-http
+    k8s:
+      rule: "HostSNI(`*`)"
+      entryPoints: [ "k8s" ]
+      service: k8s
   services:
     backend-http:
       loadBalancer:
@@ -23,3 +27,7 @@ tcp:
           version: 2
         servers:
         - address: "traefik2:443"
+    k8s:
+      loadBalancer:
+        servers:
+        - address: "traefik2:6443"

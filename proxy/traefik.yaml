@@ -13,6 +13,8 @@ entryPoints:
     address: :80
   websecure:
     address: :443
+  k8s:
+    address: :6443
 
 ###################################
 # API and dashboard configuration #
