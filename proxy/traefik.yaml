@@ -25,7 +25,6 @@ api:
 ###########################
 # Providers configuration #
 ###########################
-
 providers:
   file:
     filename: ./config.yaml
