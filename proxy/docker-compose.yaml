@@ -8,3 +8,10 @@ services:
     volumes:
       - ./traefik.yaml:/traefik.yaml
       - ./config.yaml:/config.yaml
+
+  mitmproxy:
+    image: mitmproxy/mitmproxy:10.2.1
+    container_name: mitmproxy
+    restart: always
+    command: mitmdump
+    network_mode: "host"

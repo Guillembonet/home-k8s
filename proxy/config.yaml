@@ -20,14 +20,14 @@ tcp:
         proxyProtocol:
           version: 2
         servers:
-        - address: "traefik2:80"
+        - address: "10.1.10.1:80"
     backend-https:
       loadBalancer:
         proxyProtocol:
           version: 2
         servers:
-        - address: "traefik2:443"
+        - address: "10.1.10.1:443"
     k8s:
       loadBalancer:
         servers:
-        - address: "traefik2:6443"
+        - address: "10.1.10.1:6443"
