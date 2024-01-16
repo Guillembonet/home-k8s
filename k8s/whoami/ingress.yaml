@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whoami-ingress
+  namespace: whoami
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: "middlewares-deny-metrics@kubernetescrd"
+spec:
+  tls:
+  - hosts:
+    - host
+    secretName: whoami-tls
+  rules:
+  - host: host
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: whoami-service
+            port:
+              number: 80
+            
