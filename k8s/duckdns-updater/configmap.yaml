@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: duckdns-updater-config
+  namespace: duckdns-updater
+  labels:
+    app: duckdns-updater
+data:
+  DOMAIN: <domain>
+  PROXY_URL: http://10.1.10.2:8080
+  PROMETHEUS_PUSH_URL: http://prometheus-prometheus-pushgateway.prometheus.svc:9091
+  INSECURE_SKIP_VERIFY: "true"

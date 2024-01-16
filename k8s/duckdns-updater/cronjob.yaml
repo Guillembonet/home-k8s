@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: duckdns-updater
+  namespace: duckdns-updater
+spec:
+  schedule: "@daily"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: duckdns-updater
+            image: bunetz/duckdns-updater:0.0.3
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: DOMAIN
+                valueFrom:
+                  configMapKeyRef:
+                    name: duckdns-updater-config
+                    key: DOMAIN
+              - name: PROXY_URL
+                valueFrom:
+                  configMapKeyRef:
+                    name: duckdns-updater-config
+                    key: PROXY_URL
+              - name: PROMETHEUS_PUSH_URL
+                valueFrom:
+                  configMapKeyRef:
+                    name: duckdns-updater-config
+                    key: PROMETHEUS_PUSH_URL
+              - name: INSECURE_SKIP_VERIFY
+                valueFrom:
+                  configMapKeyRef:
+                    name: duckdns-updater-config
+                    key: INSECURE_SKIP_VERIFY
+              - name: TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: duckdns-updater-secret
+                    key: TOKEN
