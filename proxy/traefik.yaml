@@ -1,0 +1,31 @@
+########################
+# Global configuration #
+########################
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: true
+
+#############################
+# EntryPoints configuration #
+#############################
+entryPoints:
+  web:
+    address: :80
+  websecure:
+    address: :443
+  k8s:
+    address: :6443
+
+###################################
+# API and dashboard configuration #
+###################################
+api:
+  dashboard: false
+
+###########################
+# Providers configuration #
+###########################
+providers:
+  file:
+    filename: ./config.yaml
+    watch: true

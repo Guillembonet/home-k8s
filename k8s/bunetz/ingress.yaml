@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bunetz
+  namespace: bunetz
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location "/metrics" {
+          deny all;
+          return 403;
+        }
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-rpm: "500"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "5"
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true" 
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - bunetz.dev
+    - www.bunetz.dev
+    secretName: bunetz-tls
+  rules:
+  - host: bunetz.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: bunetz
+            port:
+              name: http-port

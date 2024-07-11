@@ -1,0 +1,37 @@
+tcp:
+  routers:
+    https:
+      rule: "HostSNI(`*`)"
+      entryPoints: [ "websecure" ]
+      service: backend-https
+      tls:
+        passthrough: true
+    http:
+      rule: "HostSNI(`*`)"
+      entryPoints: [ "web" ]
+      service: backend-http
+    k8s:
+      rule: "HostSNI(`*`)"
+      entryPoints: [ "k8s" ]
+      service: k8s
+      tls:
+        passthrough: true
+  services:
+    backend-https:
+      loadBalancer:
+        proxyProtocol:
+          version: 1
+        servers:
+        - address: "10.1.10.1:443"
+        - address: "10.1.10.3:443"
+    backend-http:
+      loadBalancer:
+        proxyProtocol:
+          version: 1
+        servers:
+        - address: "10.1.10.1:80"
+        - address: "10.1.10.3:80"
+    k8s:
+      loadBalancer:
+        servers:
+        - address: "10.1.10.1:6443"

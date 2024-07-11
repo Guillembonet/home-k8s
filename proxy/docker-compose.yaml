@@ -1,0 +1,17 @@
+version: "3"
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik-proxy
+    restart: always
+    network_mode: "host"
+    volumes:
+      - ./traefik.yaml:/traefik.yaml
+      - ./config.yaml:/config.yaml
+
+  mitmproxy:
+    image: mitmproxy/mitmproxy:10.2.1
+    container_name: mitmproxy
+    restart: always
+    command: mitmdump
+    network_mode: "host"
