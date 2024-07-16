@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ingress-nginx
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: ingress-nginx
+    repoURL: https://kubernetes.github.io/ingress-nginx
+    targetRevision: 4.11.0
+    helm:
+      valuesObject:
+        controller:
+          config:
+            use-proxy-protocol: "true"
+            allow-snippet-annotations: "true"
+            limit-req-status-code: "429"
+            enable-modsecurity: "true"
+            error-log-level: "info"
+            modsecurity-snippet: |
+              Include /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf
+              
+              SecRequestBodyLimit 300000000
+
+              SecAction "id:900110,phase:1,pass,nolog,\
+                setvar:tx.inbound_anomaly_score_threshold=5,\
+                setvar:tx.outbound_anomaly_score_threshold=4"
+
+              SecAction "id:900000,phase:1,pass,nolog,\
+                setvar:tx.paranoia_level=1"
+
+              SecRuleEngine On
+            log-format-upstream: '{"time": "$time_iso8601", "remote_address": "$remote_addr", "request": "$request", "status": $status, "http_user_agent": "$http_user_agent",
+              "request_length": $request_length, "body_bytes_sent": "$body_bytes_sent", "http_referrer": "$http_referer", "request_time": $request_time, "host": "$host",
+              "request_id": "$req_id", "x_forwarded_for": "$proxy_add_x_forwarded_for", "remote_user": "$remote_user", "ingress_namespace": "$namespace", "path": "$uri",
+              "request_proto": "$server_protocol", "method": "$request_method", "request_query": "$args", "service_name": "$service_name", "service_port": "$service_port",
+              "upstream_addr": "$upstream_addr","ingress_name": "$ingress_name"}'
+            log-format-escape-json: "true"
+          
+          podAnnotations:
+            prometheus.io/scrape: 'true'
+            prometheus.io/port: '10254'
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: ingress-nginx

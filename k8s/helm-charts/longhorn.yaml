@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: longhorn
+    repoURL: https://charts.longhorn.io
+    targetRevision: 1.6.2
+    helm:
+      valuesObject:
+        persistence:
+          defaultClassReplicaCount: 2
+        longhornUI:
+          replicas: 1
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "9500"
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: longhorn
+ 
