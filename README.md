@@ -84,10 +84,11 @@ The purpose of the proxy is to hide your home IP by proxying all from any other 
 
 1. Install Argocd using helm.
     ```
-    kubectl apply -f ./k8s/argo-cd/ingress/0_namespace.yaml
-    helm install argocd ./k8s/argo-cd --namespace argocd
+    kubectl apply -f ./k8s/argocd-config/0_namespace.yaml
+    helm repo add argo https://argoproj.github.io/argo-helm
+    helm install -f ./k8s/helm-charts/argocd-values.yaml argocd argo/argo-cd --namespace argocd --version 7.3.7
     ```
 
-2. Port forward the argocd server, login using generated password and start adding apps to argocd. Start with `sealed-secrets` so secrets can be decrypted, and make sure to add Longhorn before adding any app which requires persistent storage.
+2. Port forward the argocd server, login using generated password and start adding apps to argocd. Start with `helm-charts` which will add all the helm charts and sync it, which will create the application resources (without deploying them). Then start by syncing the argocd helm applications, start with `sealed-secrets` so secrets can be decrypted, and make sure to sync Longhorn before adding any app which requires persistent storage.
 
 3. Change all default passwords.
