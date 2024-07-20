@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-machinelearning
+  namespace: immich
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immich-machinelearning
+  template:
+    metadata:
+      labels:
+        app: immich-machinelearning
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: "bunetzk8s"
+      containers:
+      - name: immich-machinelearning
+        image: ghcr.io/immich-app/immich-machine-learning:v1.106.4
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: IMMICH_PORT
+            value: "3003"
+        ports:
+          - name: http-port
+            containerPort: 3003
+        volumeMounts:
+          - mountPath: /cache
+            name: immich-machinelearning-cache
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 50m
+          limits:
+            memory: 1.5Gi
+            cpu: 500m
+      volumes:
+        - name: immich-machinelearning-cache
+          persistentVolumeClaim:
+            claimName: immich-machinelearning-pvc
+

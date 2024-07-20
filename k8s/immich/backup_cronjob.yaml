@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: immich-backup
+  namespace: immich
+spec:
+  schedule: "0 4 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          nodeSelector:
+            kubernetes.io/hostname: "bunetzk8s"
+          restartPolicy: Never
+          containers:
+          - name: immich-backup
+            image: rclone/rclone:1.65.2
+            imagePullPolicy: IfNotPresent
+            command: [ "sh", "-c",
+              '[ -d "/data/src/library" ] && rclone sync --progress /data/src encrypted: || (echo "Missing library folder in immich data"; exit 1)' ]
+            volumeMounts:
+            - mountPath: /data/src
+              name: immich-data
+            - name: rclone-config
+              mountPath: /config/rclone/rclone.conf
+              subPath: rclone.conf
+            resources:
+              requests:
+                memory: 64Mi
+                cpu: 10m
+              limits:
+                memory: 512Mi
+                cpu: 400m
+          volumes:
+          - name: rclone-config
+            secret:
+              secretName: immich-secret
+          - name: immich-data
+            persistentVolumeClaim:
+              claimName: immich-data-pvc
+            

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: geoipupdate
+  namespace: loki
+spec:
+  selector:
+    matchLabels:
+      name: geoipupdate
+  template:
+    metadata:
+      labels:
+        name: geoipupdate
+    spec:
+      containers:
+      - name: geoipupdate
+        image: ghcr.io/maxmind/geoipupdate:v7.0.1
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: GEOIPUPDATE_EDITION_IDS
+            value: "GeoLite2-City"
+          - name: GEOIPUPDATE_FREQUENCY
+            value: "24"
+          - name: GEOIPUPDATE_ACCOUNT_ID
+            valueFrom:
+              secretKeyRef:
+                name: loki-secret
+                key: MAXMIND_ACCOUNT_ID
+          - name: GEOIPUPDATE_LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: loki-secret
+                key: MAXMIND_LICENSE_KEY
+        volumeMounts:
+          - name: download-folder
+            mountPath: /usr/share/GeoIP
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 10m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+      volumes:
+        - name: download-folder
+          hostPath:
+            path: /etc/maxmind

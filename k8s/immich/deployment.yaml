@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich
+  namespace: immich
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immich
+  template:
+    metadata:
+      labels:
+        app: immich
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: "bunetzk8s"
+      containers:
+      - name: immich
+        image: ghcr.io/immich-app/immich-server:v1.106.4
+        command: [ "sh", "-c",
+          '[ -d "/usr/src/app/upload/library" ] && ./start.sh || echo "Missing library folder in immich data"' ]
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: DB_HOSTNAME
+            valueFrom:
+              configMapKeyRef:
+                name: immich-config
+                key: DB_HOSTNAME
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: immich-config
+                key: DB_PORT
+          - name: DB_USERNAME
+            valueFrom:
+              configMapKeyRef:
+                name: immich-config
+                key: DB_USERNAME
+          - name: DB_DATABASE_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: immich-config
+                key: DB_DATABASE_NAME
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: immich-secret
+                key: DB_PASSWORD
+          - name: REDIS_HOSTNAME
+            valueFrom:
+              configMapKeyRef:
+                name: immich-config
+                key: REDIS_HOSTNAME
+          - name: REDIS_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: immich-config
+                key: REDIS_PORT
+          - name: IMMICH_METRICS
+            value: "true"
+          - name: IMMICH_PORT
+            value: "3001"
+        ports:
+          - name: http-port
+            containerPort: 3001
+          - name: server-metrics
+            containerPort: 8081
+        volumeMounts:
+          - mountPath: /usr/src/app/upload
+            name: immich-data
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 1Gi
+            cpu: 1000m
+      volumes:
+        - name: immich-data
+          persistentVolumeClaim:
+            claimName: immich-data-pvc

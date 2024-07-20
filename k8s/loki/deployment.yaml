@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: loki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3100"
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: "bunetzk8s-agent"
+      containers:
+      - name: loki
+        image: grafana/loki:3.0.0
+        args:
+          - -config.file=/etc/loki/config.yaml
+        ports:
+        - name: http-port
+          containerPort: 3100
+        volumeMounts:
+        - name: loki-config
+          mountPath: /etc/loki
+        - name: loki-chunks-data
+          mountPath: /var/loki/chunks
+        - name: loki-rules-data
+          mountPath: /var/loki/rules
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: 500m
+          requests:
+            memory: 128Mi
+            cpu: 100m
+      volumes:
+      - name: loki-config
+        configMap:
+          name: loki-config
+      - name: loki-chunks-data
+        persistentVolumeClaim:
+          claimName: loki-chunks-pvc
+      - name: loki-rules-data
+        persistentVolumeClaim:
+          claimName: loki-rules-pvc

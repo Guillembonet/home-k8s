@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: grafana
+    repoURL: https://grafana.github.io/helm-charts
+    targetRevision: 8.3.4
+    helm:
+      valuesObject:
+        admin:
+          existingSecret: "grafana-secret"
+          userKey: "ADMIN_USER"
+          passwordKey: "ADMIN_PASSWORD"
+        extraSecretMounts:
+        - name: grafana-secret
+          secretName: grafana-secret
+          defaultMode: 0440
+          mountPath: /etc/secrets/grafana-secret
+          readOnly: true
+        datasources:
+          datasources.yaml:
+            apiVersion: 1
+            datasources:
+            - name: Prometheus
+              type: prometheus
+              url: "http://prometheus-server.prometheus.svc"
+              access: proxy
+              isDefault: true
+              jsonData:
+                timeInterval: 1m
+        grafana.ini:
+          server:
+            domain: grafana.bunetz.dev
+            root_url: https://grafana.bunetz.dev/
+          database:
+            type: postgres
+            host: postgres.postgres.svc:5432
+            name: grafana
+            user: grafana
+            password: $__file{/etc/secrets/grafana-secret/database_password}
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: grafana

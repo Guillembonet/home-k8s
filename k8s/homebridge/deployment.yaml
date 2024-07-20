@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homebridge
+  namespace: homebridge
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: homebridge
+  template:
+    metadata:
+      labels:
+        app: homebridge
+    spec:
+      hostNetwork: true
+      containers:
+      - name: homebridge
+        image: homebridge/homebridge:2024-01-08
+        imagePullPolicy: IfNotPresent
+        ports:
+          - name: http-port
+            containerPort: 8581
+        volumeMounts:
+          - mountPath: /homebridge
+            subPath: ./data
+            name: homebridge-data
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 10m
+          limits:
+            memory: 512Mi
+            cpu: 200m
+      volumes:
+        - name: homebridge-data
+          persistentVolumeClaim:
+            claimName: homebridge-pv-claim

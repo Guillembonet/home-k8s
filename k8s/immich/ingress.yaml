@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: immich
+  namespace: immich
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location "/metrics" {
+          deny all;
+          return 403;
+        }
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-rpm: "200"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "2"
+    nginx.ingress.kubernetes.io/modsecurity-snippet: |
+      SecRuleRemoveById 920420
+      SecRuleRemoveById 911100
+      SecRuleRemoveById 921110
+    nginx.ingress.kubernetes.io/proxy-body-size: 200M
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - immich.bunetz.dev
+    secretName: immich-tls
+  rules:
+  - host: immich.bunetz.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: immich
+            port:
+              name: http-port
+            

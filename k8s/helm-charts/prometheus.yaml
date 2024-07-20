@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: prometheus
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 25.24.0
+    helm:
+      valuesObject:
+        server:
+          persistentVolume:
+            size: 10Gi
+            storageClass: "longhorn"
+          retention: "1y"
+          retentionSize: "7GB"
+        alertmanager:
+          persistence:
+            size: 512Mi
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: prometheus
