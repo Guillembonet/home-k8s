@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vaultwarden
+  namespace: vaultwarden
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location "/metrics" {
+        deny all;
+        return 403;
+      }
+      location "/admin" {
+        deny all;
+        return 403;
+      }
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-rpm: "200"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "2"
+    nginx.ingress.kubernetes.io/modsecurity-snippet: |
+      SecRuleRemoveById 911100
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - vaultwarden.bunetz.dev
+    secretName: vaultwarden-tls
+  rules:
+  - host: vaultwarden.bunetz.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vaultwarden
+            port:
+              name: http-port

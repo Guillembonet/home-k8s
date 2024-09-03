@@ -6,10 +6,12 @@ tcp:
       service: backend-https
       tls:
         passthrough: true
-    http:
-      rule: "HostSNI(`*`)"
-      entryPoints: [ "web" ]
-      service: backend-http
+    proxy:
+      rule: "HostSNI(`proxy.bunetz.dev`)"
+      entrypoints: [ "websecure" ]
+      service: proxy
+      tls:
+        passthrough: true
     k8s:
       rule: "HostSNI(`*`)"
       entryPoints: [ "k8s" ]
@@ -24,14 +26,40 @@ tcp:
         servers:
         - address: "10.1.10.1:443"
         - address: "10.1.10.3:443"
-    backend-http:
+    proxy:
       loadBalancer:
-        proxyProtocol:
-          version: 1
         servers:
-        - address: "10.1.10.1:80"
-        - address: "10.1.10.3:80"
+        - address: "127.0.0.1:8081"
     k8s:
       loadBalancer:
         servers:
         - address: "10.1.10.1:6443"
+http:
+  routers:
+    http:
+      rule: "PathPrefix(`/`)"
+      entryPoints: [ "web" ]
+      service: backend-http
+      priority: 1
+      middlewares:
+        - "redirect-https"
+    proxy-http:
+      rule: "Host(`proxy.bunetz.dev`)"
+      entryPoints: [ "web" ]
+      service: proxy-http
+      priority: 2
+  middlewares:
+    redirect-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+  services:
+    backend-http:
+      loadBalancer:
+        servers:
+        - url: "http://10.1.10.1"
+        - url: "http://10.1.10.3"
+    proxy-http:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8082"

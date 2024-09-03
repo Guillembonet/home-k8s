@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ip
+  namespace: ip
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ip
+  template:
+    metadata:
+      labels:
+        app: ip
+    spec:
+      containers:
+      - name: ip
+        image: bunetz/public-ip-server:1.0
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c", "public-ip-server \
+          -password='$(PASSWORD)'"]
+        env:
+          - name: PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ip-secret
+                key: PASSWORD
+        ports:
+          - name: http-port
+            containerPort: 8080
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 10m
+          limits:
+            memory: 64Mi
+            cpu: 100m

@@ -1,4 +1,3 @@
-version: "3"
 services:
   traefik:
     image: traefik:v2.11
@@ -15,3 +14,27 @@ services:
     restart: always
     command: mitmdump
     network_mode: "host"
+
+  dumbproxy:
+    image: ghcr.io/senseunit/dumbproxy:1.12.0-alpine
+    restart: always
+    entrypoint: "/dumbproxy"
+    command:
+      [
+        "-bind-address",
+        ":8081",
+        "-autocert-http",
+        ":8082",
+        "-autocert-whitelist",
+        "proxy.bunetz.dev",
+        "-autocert-dir",
+        "/home/user/.dumbproxy/autocert",
+        "-autocert",
+        "-auth",
+        "static://?username=user&password=password&hidden_domain=proxy.bunetz.dev",
+      ]
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - ./dumbproxy:/home/user/.dumbproxy/autocert

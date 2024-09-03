@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: pi-metrics
+  namespace: pi-metrics
+  labels:
+    app: pi-metrics
+spec:
+  selector:
+    matchLabels:
+      app: pi-metrics
+  template:
+    metadata:
+      labels:
+        app: pi-metrics
+      annotations:
+        prometheus.io/scrape: 'true'
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: pi-metrics
+        image: bunetz/pi-metrics:0.0.2
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: 64Mi
+            cpu: 10m
+          limits:
+            memory: 256Mi
+            cpu: 100m

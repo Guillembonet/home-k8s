@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vaultwarden
+  namespace: vaultwarden
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vaultwarden
+  template:
+    metadata:
+      labels:
+        app: vaultwarden
+    spec:
+      containers:
+      - name: vaultwarden
+        image: vaultwarden/server:1.32.0-alpine
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: SIGNUPS_ALLOWED
+            valueFrom:
+              configMapKeyRef:
+                name: vaultwarden-config
+                key: SIGNUPS_ALLOWED
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: vaultwarden-secret
+                key: DATABASE_URL
+          - name: ADMIN_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: vaultwarden-secret
+                key: ADMIN_TOKEN
+        ports:
+          - name: http-port
+            containerPort: 80
+        resources:
+          requests:
+            memory: 64Mi
+            cpu: 10m
+          limits:
+            memory: 256Mi
+            cpu: 300m
