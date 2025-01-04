@@ -1,0 +1,60 @@
+- name: Ensure WireGuard is installed
+  become: true
+  ansible.builtin.apt:
+    name:
+      - wireguard
+      - wireguard-tools
+    state: present
+    update_cache: true
+    cache_valid_time: 86400 # One day
+
+- name: Set wireguard configuration
+  ansible.builtin.set_fact:
+    wg_config: |
+      [Interface]
+      Address = {{ wireguard_ip }}/32
+      PrivateKey = {{ wireguard_private_key }}
+      ListenPort = 51820
+
+      {% for hostname, host_data in hostvars.items() if hostname != 'localhost' %}
+      {% if hostname != inventory_hostname %}
+      [Peer]
+      PublicKey = {{ host_data.wireguard_public_key }}
+      AllowedIPs = {{ host_data.wireguard_ip }}/32
+      Endpoint = {{ host_data.node_ip }}:51820
+      PersistentKeepalive = 25
+
+      {% endif %}
+      {% endfor %}
+
+      [Peer]
+      PublicKey = {{ hostvars.proxy.wireguard_public_key }}
+      AllowedIPs = {{ hostvars.proxy.wireguard_ip }}/32
+      Endpoint = {{ hostvars.proxy.node_ip }}:51820
+      PersistentKeepalive = 25
+
+- name: Save wireguard configuration to file
+  become: true
+  ansible.builtin.copy:
+    content: "{{ wg_config }}"
+    dest: "/etc/wireguard/k8s-tunnel.conf"
+    mode: "0644"
+  register: wireguard_config
+
+- name: Start WireGuard
+  become: true
+  ansible.builtin.systemd:
+    name: "wg-quick@k8s-tunnel"
+    state: started
+    enabled: true
+    daemon_reload: true
+  register: wireguard_start
+
+- name: Restart WireGuard
+  become: true
+  ansible.builtin.systemd:
+    name: "wg-quick@k8s-tunnel"
+    state: restarted
+    enabled: true
+    daemon_reload: true
+  when: wireguard_config.changed and not wireguard_start.changed

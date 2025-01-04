@@ -1,0 +1,52 @@
+- name: Update and upgrade apt
+  become: true
+  ansible.builtin.apt:
+    upgrade: true
+    update_cache: true
+    cache_valid_time: 86400 # One day
+
+- name: Configure Static IP
+  become: true
+  block:
+    - name: Configure static IP using netplan
+      ansible.builtin.copy:
+        dest: /etc/netplan/01-netcfg.yaml
+        mode: "0644"
+        content: |
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+              {{ common_interface_name }}:
+                addresses:
+                  - {{ node_ip }}/24
+                gateway4: {{ common_gateway }}
+                nameservers:
+                  addresses: [{{ common_dns_servers | join(', ') }}]
+      register: netplan_copy
+
+    - name: Disable cloud-init networking
+      ansible.builtin.copy:
+        dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+        mode: "0644"
+        content: |
+          network: {config: disabled}
+      register: cloud_init_copy
+
+    - name: Apply netplan configuration
+      ansible.builtin.command: netplan apply
+      when: netplan_copy.changed or cloud_init_copy.changed
+      changed_when: true
+
+# Needed for running a DHCP server
+- name: Disable DNSStubListener
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/resolved.conf
+    mode: "0644"
+    content: |
+      [Resolve]
+      DNS=1.1.1.1
+      FallbackDNS=8.8.8.8
+      DNSStubListener=no
+  notify: Restart systemd-resolved

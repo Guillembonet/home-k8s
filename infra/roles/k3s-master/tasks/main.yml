@@ -1,0 +1,62 @@
+- name: Save cluster configuration to file
+  become: true
+  block:
+    - name: Make config directory
+      ansible.builtin.file:
+        path: "/etc/rancher/k3s"
+        mode: "0755"
+        state: directory
+    - name: Save cluster configuration to file from template
+      ansible.builtin.template:
+        src: "config.yaml.j2"
+        dest: "/etc/rancher/k3s/config.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+      vars:
+        token: "{{ cluster_config.token }}"
+
+- name: Get current k3s version
+  ansible.builtin.command:
+    cmd: k3s --version
+  register: k3s_version
+  ignore_errors: true
+  changed_when: false
+
+- name: Install / Upgrade K3s
+  when: k3s_version.rc != 0 or
+    (k3s_version.stdout | regex_search('k3s version (\\S+)', '\\1') | first | default(k3s_version.stdout)) != cluster_config.k3s_version
+  block:
+    - name: Download K3s install script
+      become: true
+      ansible.builtin.get_url:
+        url: https://get.k3s.io/
+        timeout: 120
+        dest: /usr/local/bin/k3s-install.sh
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Run K3s install script
+      ansible.builtin.command:
+        cmd: /usr/local/bin/k3s-install.sh
+      environment:
+        INSTALL_K3S_VERSION: "{{ cluster_config.k3s_version }}"
+      changed_when: true
+
+- name: Copy kubeconfig
+  when: k3s_version.rc != 0
+  block:
+    - name: Create directory .kube
+      ansible.builtin.file:
+        path: .kube
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+
+    - name: Copy config file to user home directory
+      become: true
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: .kube/config.yaml
+        flat: true

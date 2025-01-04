@@ -1,0 +1,40 @@
+- name: Get kernel version
+  ansible.builtin.command:
+    cmd: uname -r
+  register: kernel_version
+  changed_when: false
+
+- name: Ensure dependencies are installed
+  become: true
+  ansible.builtin.apt:
+    name:
+      - open-iscsi
+      - linux-headers-raspi
+      - linux-headers-{{ kernel_version.stdout }}
+      - linux-modules-extra-{{ kernel_version.stdout }}
+    state: present
+    update_cache: true
+    cache_valid_time: 86400 # One day
+
+- name: Add cronjob to run update script
+  become: true
+  block:
+    - name: Copy script
+      ansible.builtin.copy:
+        src: scripts/linux-headers-update.sh
+        dest: /usr/local/bin/linux-headers-update.sh
+        mode: "0755"
+
+    - name: Run script
+      become: true
+      ansible.builtin.command: /usr/local/bin/linux-headers-update.sh
+      changed_when: false
+
+    - name: Add a cron job to run the script every hour
+      ansible.builtin.cron:
+        name: "Update Linux headers"
+        minute: "0"
+        hour: "*"
+        job: "/usr/local/bin/linux-headers-update.sh"
+        user: root
+        state: present

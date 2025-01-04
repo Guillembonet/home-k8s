@@ -1,0 +1,6 @@
+common_interface_name: eth0
+common_gateway: "192.168.1.1"
+common_dns_servers:
+  - "8.8.8.8"
+  - "8.8.8.4"
+  - "1.1.1.1"

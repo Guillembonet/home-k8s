@@ -1,0 +1,9 @@
+token: "{{ token }}"
+tls-san:
+  - bunetz.dev
+  - www.bunetz.dev
+  - "{{ node_ip }}"
+disable: traefik
+advertise-address: "{{ wireguard_ip }}"
+node-ip: "{{ wireguard_ip }}"
+flannel-iface: k8s-tunnel

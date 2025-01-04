@@ -1,0 +1,10 @@
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+cluster_config:
+  token: "secret_token"
+  k3s_version: "v1.30.7+k3s1"
+  immich:
+    folder_path: /home/vagrant/data/immich-data
+    mountpoint: /dev/dm-0
+    encryption_password: "encryption_password"
+  proxy_folder_path: /home/vagrant/proxy

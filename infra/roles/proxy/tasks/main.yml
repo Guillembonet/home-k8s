@@ -1,0 +1,95 @@
+- name: Update and upgrade apt
+  become: true
+  ansible.builtin.apt:
+    upgrade: true
+    update_cache: true
+    cache_valid_time: 86400 # One day
+
+- name: Ensure dependencies are installed
+  become: true
+  ansible.builtin.apt:
+    name:
+      - wireguard
+      - wireguard-tools
+      - python3-debian
+    state: present
+    update_cache: true
+    cache_valid_time: 86400 # One day
+
+- name: Add Docker's official GPG key
+  become: true
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: [deb]
+    uris: "https://download.docker.com/linux/ubuntu"
+    signed_by: "https://download.docker.com/linux/ubuntu/gpg"
+    suites: "{{ ansible_lsb.codename }}"
+    components: [stable]
+    architectures: "{{ proxy_arch_mapping[ansible_architecture] | default(ansible_architecture) }}"
+    state: present
+    enabled: true
+
+- name: Install docker-ce
+  become: true
+  ansible.builtin.apt:
+    name: docker-ce
+    state: present
+    update_cache: true
+
+- name: Set wireguard configuration
+  ansible.builtin.set_fact:
+    wg_config: |
+      [Interface]
+      Address = {{ wireguard_ip }}/32
+      PrivateKey = {{ wireguard_private_key }}
+      ListenPort = 51820
+
+      {% for hostname, host_data in hostvars.items() if hostname != 'localhost' %}
+      [Peer]
+      PublicKey = {{ host_data.wireguard_public_key }}
+      AllowedIPs = {{ host_data.wireguard_ip }}/32
+
+      {% endfor %}
+
+- name: Save wireguard configuration to file
+  become: true
+  ansible.builtin.copy:
+    content: "{{ wg_config }}"
+    dest: "/etc/wireguard/k8s-tunnel.conf"
+    mode: "0644"
+  register: wireguard_config
+
+- name: Start WireGuard
+  become: true
+  ansible.builtin.systemd:
+    name: "wg-quick@k8s-tunnel"
+    state: started
+    enabled: true
+    daemon_reload: true
+  register: wireguard_start
+
+- name: Restart WireGuard
+  become: true
+  ansible.builtin.systemd:
+    name: "wg-quick@k8s-tunnel"
+    state: restarted
+    enabled: true
+    daemon_reload: true
+  when: wireguard_config.changed and not wireguard_start.changed
+
+- name: Ensure proxy folder exists
+  ansible.builtin.file:
+    path: "{{ cluster_config.proxy_folder_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Copy proxy files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ cluster_config.proxy_folder_path }}/{{ item | basename }}"
+    mode: "0644"
+  with_fileglob:
+    - "files/proxy/*"
+  notify:
+    - Stop docker compose
+    - Start docker compose

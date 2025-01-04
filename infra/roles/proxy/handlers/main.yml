@@ -1,0 +1,13 @@
+- name: Stop docker compose
+  become: true
+  ansible.builtin.command:
+    cmd: docker compose down
+    chdir: "{{ cluster_config.proxy_folder_path }}"
+  changed_when: true
+
+- name: Start docker compose
+  become: true
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ cluster_config.proxy_folder_path }}"
+  changed_when: true

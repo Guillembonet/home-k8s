@@ -1,0 +1,51 @@
+- name: Get master hostname from inventory
+  ansible.builtin.set_fact:
+    master_hostname: "{{ groups['master'][0] }}"
+
+- name: Save cluster configuration to file
+  become: true
+  block:
+    - name: Make config directory
+      ansible.builtin.file:
+        path: "/etc/rancher/k3s"
+        mode: "0755"
+        state: directory
+
+    - name: Save cluster configuration to file from template
+      ansible.builtin.template:
+        src: "config.yaml.j2"
+        dest: "/etc/rancher/k3s/config.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+      vars:
+        token: "{{ cluster_config.token }}"
+        server: "https://{{ hostvars[master_hostname].wireguard_ip }}:6443"
+
+- name: Get current k3s version
+  ansible.builtin.command:
+    cmd: k3s --version
+  register: k3s_version
+  ignore_errors: true
+  changed_when: false
+
+- name: Install / Upgrade K3s
+  when: k3s_version.rc != 0 or
+    (k3s_version.stdout | regex_search('k3s version (\\S+)', '\\1') | first | default(k3s_version.stdout)) != cluster_config.k3s_version
+  block:
+    - name: Download K3s install script
+      become: true
+      ansible.builtin.get_url:
+        url: https://get.k3s.io/
+        timeout: 120
+        dest: /usr/local/bin/k3s-install.sh
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Run K3s install script
+      ansible.builtin.command:
+        cmd: /usr/local/bin/k3s-install.sh agent
+      environment:
+        INSTALL_K3S_VERSION: "{{ cluster_config.k3s_version }}"
+      changed_when: true

@@ -1,0 +1,8 @@
+ansible_host: localhost
+ansible_port: 8081
+ansible_user: vagrant
+
+node_ip: 192.168.30.2
+wireguard_ip: 10.1.0.1
+wireguard_private_key: "mN9oExO4YH30vv7yTXrTh1YW4dfSR83/uwixSOxivnY="
+wireguard_public_key: "SWmZ9VdiJ/Z08J3Q3wmItwC2de16FGLizu3/FE7q7Wo="

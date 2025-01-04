@@ -1,0 +1,66 @@
+- name: Ensure fscrypt is installed
+  become: true
+  ansible.builtin.apt:
+    name:
+      - fscrypt
+    state: present
+    update_cache: true
+    cache_valid_time: 86400 # One day
+
+- name: Check if fscrypt is setup
+  ansible.builtin.stat:
+    path: /etc/fscrypt.conf
+  register: fscrypt_conf
+
+- name: Ensure immich folder exists
+  ansible.builtin.file:
+    path: "{{ cluster_config.immich.folder_path }}"
+    state: directory
+    mode: "0700"
+
+- name: Ensure immich machine learning folder exists
+  ansible.builtin.file:
+    path: "{{ cluster_config.immich.machine_learning_folder_path }}"
+    state: directory
+    mode: "0700"
+
+- name: Setup encryption on immich folder
+  become: true
+  ansible.builtin.expect:
+    command: fscrypt setup
+    chdir: "{{ cluster_config.immich.folder_path }}"
+    responses:
+      "Allow users other than root to create fscrypt metadata on the root filesystem?": "n"
+  when: not fscrypt_conf.stat.exists
+  changed_when: true
+
+- name: Setup encryption support on drive
+  ansible.builtin.command: sudo tune2fs -O encrypt "{{ cluster_config.immich.mountpoint }}"
+  changed_when: false
+
+- name: Check if immich folder is encrypted
+  become: true
+  ansible.builtin.command: fscrypt status "{{ cluster_config.immich.folder_path }}"
+  register: immich_status
+  ignore_errors: true
+  changed_when: false
+
+- name: Setup encryption on immich folder
+  become: true
+  ansible.builtin.expect:
+    command: fscrypt encrypt --source custom_passphrase --name immich_password {{ cluster_config.immich.folder_path }}
+    responses:
+      "Enter custom passphrase for protector|Confirm passphrase": "{{ cluster_config.immich.encryption_password }}"
+  when: immich_status.rc != 0
+  changed_when: true
+
+- name: Unlock immich folder
+  become: true
+  ansible.builtin.expect:
+    command: fscrypt unlock {{ cluster_config.immich.folder_path }}
+    responses:
+      "Enter custom passphrase for protector": "{{ cluster_config.immich.encryption_password }}"
+  when:
+    - immich_status.rc == 0
+    - '"Unlocked: No" in immich_status.stdout'
+  changed_when: true

@@ -1,0 +1,39 @@
+- name: Setup nodes
+  hosts: nodes
+  roles:
+    - common
+
+- name: Setup proxy
+  hosts: proxy
+  roles:
+    - proxy
+
+- name: Setup Raspberry
+  hosts: raspberry
+  roles:
+    - raspberry
+
+- name: Setup wireguard network for nodes
+  hosts: nodes
+  roles:
+    - wireguard
+
+- name: Setup Loki
+  hosts: loki
+  roles:
+    - loki
+
+- name: Setup Immich
+  hosts: immich
+  roles:
+    - immich
+
+- name: Setup master
+  hosts: master
+  roles:
+    - k3s-master
+
+- name: Setup workers
+  hosts: workers
+  roles:
+    - k3s-worker

@@ -1,0 +1,11 @@
+- name: Ensure rules folder exists
+  ansible.builtin.file:
+    path: "{{ cluster_config.loki.folder_path }}/rules"
+    state: directory
+    mode: "0755"
+
+- name: Ensure chunks folder exists
+  ansible.builtin.file:
+    path: "{{ cluster_config.loki.folder_path }}/chunks"
+    state: directory
+    mode: "0755"
